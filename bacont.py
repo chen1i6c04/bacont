@@ -9,12 +9,13 @@ import subprocess
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 from loguru import logger
 from src.utils import (syscall, validate_input, validate_medaka_model, sort_assembly, annotate_assembly, fasta2fastq)
+from src.database import check_database_installation
 
 
 __location__ = os.path.dirname(os.path.abspath(__file__))
 
 
-def filter_reads(input_file, output_file, keep_percent, min_length, min_quality, num_threads):
+def filter_reads(input_file:str, output_file:str, keep_percent:int, min_length:int, min_quality:int, num_threads:int):
     logger.info(f"Keep {keep_percent} percentage of the best reads.")
     logger.info(f"Remove reads with length less than {min_length} or quality score less than {min_quality}.")
     cmd = ['filtlong', input_file]
@@ -200,6 +201,14 @@ def check_dependency():
             logger.info(f"Using {program_name:12} | {version}")
 
 
+def setting_logger(outdir):
+    fmt = "{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
+    logfile = os.path.join(outdir, 'bacont.log')
+    logger.add(logfile, format=fmt, level='INFO', mode='w')
+    logger.add(sys.stderr, format=fmt, level='ERROR')
+    logger.add(lambda _: sys.exit(1), level="ERROR")
+
+
 def main():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     required = parser.add_argument_group("Required")
@@ -250,19 +259,15 @@ def main():
     )
 
     args = parser.parse_args()
-    outdir = args.outdir
     threads = args.threads
 
     os.makedirs(args.outdir, exist_ok=True)
-    logfile = os.path.join(outdir, 'bacont.log')
-    fmt = "{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
-    logger.add(logfile, format=fmt, level='INFO')
-    logger.add(sys.stderr, format=fmt, level='ERROR')
-    logger.add(lambda _: sys.exit(1), level="ERROR")
+    setting_logger(args.outdir)
 
     logger.info("Checking dependencies")
     check_dependency()
     validate_medaka_model(args.medaka_model)
+    check_database_installation(os.path.join(__location__, 'db'))
 
     reads = preprocess_reads(
         args.reads, args.outdir, disable_trimming=args.disable_adapter_trimming, excluded_target=args.exclude,
@@ -322,11 +327,11 @@ def main():
     )
     # Evaluation of genome completeness
     if args.busco_db:
-        estimate_genome_completeness(annotated_asm, outdir, args.busco_db, threads)
+        estimate_genome_completeness(annotated_asm, args.outdir, args.busco_db, threads)
 
     if args.skani_db:
         logger.info("Running skANI.")
-        species_identify(annotated_asm, os.path.join(outdir, 'skani.txt'), args.skani_db, threads)
+        species_identify(annotated_asm, os.path.join(args.outdir, 'skani.txt'), args.skani_db, threads)
 
     for dirpath in (flye_dir, medaka_dir, dnaapler_dir):
         try:
