@@ -4,6 +4,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - pip
   - pip:
     - medaka==2.0.1
     - pyabpoa
@@ -24,3 +25,4 @@ dependencies:
   - bracken=3.0
   - bcftools
   - seqtk
+  - minimap2
