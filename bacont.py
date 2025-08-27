@@ -190,6 +190,7 @@ def check_dependency():
         "busco": "busco -v",
         "skani": "skani -V",
         "porechop_abi": "porechop_abi --version",
+        "minimap2": "minimap2 --version",
     }
     for program_name, cmd in version.items():
         child_process = syscall(cmd, stdout=True)
@@ -216,7 +217,7 @@ def main():
     required.add_argument("-o", "--outdir", required=True, help="Directory to store all the resulting files")
 
     optional = parser.add_argument_group("Optional")
-    optional.add_argument("-t", "--threads", default=8, type=int, required=False, help="number of threads [Default 8]")
+    optional.add_argument("-t", "--threads", default=8, type=int, required=False, help="number of threads")
     optional.add_argument('-g', '--genome-size', default=None,
                           help='Estimated genome size eg. 3.2M, if empty, will bell AUTO.')
     optional.add_argument('-x', '--depth', default=100, type=int,
@@ -224,13 +225,11 @@ def main():
     optional.add_argument('-l', '--min-length', metavar='', default=0, type=int)
     optional.add_argument('-q', '--min-quality', metavar='', default=0, type=int)
     optional.add_argument('-p', '--keep-percent', metavar='', default=95, type=int,
-                          help='Keep only this percentage of the best reads. '
-                               'When this parameter is used, -l and -q will bell disabled. '
-                               'Disable with -p 0')
+                          help='Keep only this percentage of the best reads. Disable with -p 0')
     optional.add_argument('-a', '--disable_adapter_trimming', action='store_true',
                           help='Adapter trimming is enabled by default. If this option is specified, adapter trimming is disabled.')
     optional.add_argument('-m', '--medaka_model', default='r1041_e82_400bps_bacterial_methylation',
-                          help='The model to be used by Medaka (default: r1041_e82_400bps_bacterial_methylation)')
+                          help='The model to be used by Medaka')
     optional.add_argument('--no_medaka', action='store_true', default=False,
                           help='Disable medaka polishing.')
     optional.add_argument('--exclude',
