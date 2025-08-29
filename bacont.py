@@ -236,6 +236,8 @@ def main():
                           help='Fasta file or Minimap2 index of target to be excluded.')
     optional.add_argument('--meta', action='store_true', help='Enable meta-genome mode of flye.')
     optional.add_argument('--flye-mode', choices=['nano-raw', 'nano-hq'], default='nano-hq', help='Flye assembly mode.')
+    optional.add_argument('--subsampling', choices=['random', 'score'], default='random',
+                          help='Choose randomly or highest scoring subsampling. You may lose small plasmids if you choose by score.')
 
     database = parser.add_argument_group("Database")
     database.add_argument(
@@ -294,7 +296,10 @@ def main():
         if origin_depth > args.depth:
             logger.info(f"Subsampling reads from {origin_depth:.0f}x to {args.depth}x.")
             sub_reads = os.path.join(args.outdir, f'READS.sub.fastq')
-            syscall(f"rasusa reads -b {gsize * args.depth} {reads} -o {sub_reads}")
+            if args.subsampling == 'random':
+                syscall(f"rasusa reads -b {gsize * args.depth} {reads} -o {sub_reads}")
+            elif args.subsampling == 'score':
+                syscall(f"filtlong -t {gsize * args.depth} {reads} > {sub_reads}")
         else:
             logger.info("No read depth reduction requested or necessary.")
             sub_reads = reads
